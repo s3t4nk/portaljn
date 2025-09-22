@@ -1,4 +1,4 @@
-@extends('adminlte::page')
+@extends('layouts.hris')
 @section('title', 'Tambah Menu')
 
 @section('content_header')
@@ -7,7 +7,7 @@
 
 @section('content')
     <div class="card">
-        <form action="{{ route('hris.admin.menu.storeMenu') }}" method="POST">
+        <form action="{{ route('hris.admin.menu.menu.store') }}" method="POST">
             @csrf
             <div class="card-body">
                 <div class="form-group">

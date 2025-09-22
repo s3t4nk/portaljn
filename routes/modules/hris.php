@@ -1,7 +1,9 @@
 <?php
-
+use Illuminate\Support\Facades\Log;
+Log::info('🔧 DEBUG: Memulai eksekusi hris.php');
 use Illuminate\Support\Facades\Route;
 use App\Modules\HRIS\Controllers\HrisController;
+use App\Modules\HRIS\Controllers\Admin\MenuManagementController;
 use App\Modules\HRIS\Controllers\BranchController;
 use App\Modules\HRIS\Controllers\DepartmentController;
 use App\Modules\HRIS\Controllers\UnitController;
@@ -11,14 +13,43 @@ use App\Modules\HRIS\Controllers\SalaryComponentController;
 use App\Modules\HRIS\Controllers\EmployeeController;
 use App\Modules\HRIS\Controllers\PayrollController;
 use App\Modules\HRIS\Controllers\EmployeeSalaryHistoryController;
-use App\Modules\HRIS\Controllers\Admin\MenuManagementController;
-use App\Modules\HRIS\Models\Position;
-use App\Modules\HRIS\Models\SalaryGrade;
+//use Illuminate\Support\Facades\Log;
 
+Log::info('✅ use statement berhasil');
+
+
+// Grup utama HRIS
 Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
-    // ✅ Benar: route /hris/dashboard → nama: hris.dashboard
+    
+     Log::info('✅ Grup admin dimulai');
+    // Dashboard & Resource lainnya
     Route::get('/dashboard', [HrisController::class, 'dashboard'])->name('dashboard');
 
+    // Semua route admin hanya untuk super_admin
+    Route::middleware(['role:super_admin'])->prefix('admin')->as('admin.')->group(function () {
+         Log::info('✅ Route menu.index terdaftar');
+        // === MANAJEMEN MENU ===
+        Route::get('/menu', [MenuManagementController::class, 'index'])->name('menu.index');
+        Log::info('✅ Route update.menu terdaftar');
+        // Modul
+        Route::get('/menu/module/create', [MenuManagementController::class, 'createModule'])->name('menu.module.create');
+        Route::post('/menu/module', [MenuManagementController::class, 'storeModule'])->name('menu.module.store');
+        Route::get('/menu/module/{module}/edit', [MenuManagementController::class, 'editModule'])->name('menu.module.edit');
+        //Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])->name('menu.module.update');
+        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])
+    ->name('menu.update.module');
+        Route::delete('/menu/module/{module}', [MenuManagementController::class, 'destroyModule'])->name('menu.module.destroy');
+
+        // Menu
+        Route::get('/menu/create', [MenuManagementController::class, 'createMenu'])->name('menu.menu.create');
+        Route::post('/menu', [MenuManagementController::class, 'storeMenu'])->name('menu.menu.store');
+        Route::get('/menu/{menu}/edit', [MenuManagementController::class, 'editMenu'])->name('menu.menu.edit');
+        //Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.menu.update');
+        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.update.menu');
+        Route::delete('/menu/{menu}', [MenuManagementController::class, 'destroy'])->name('menu.menu.destroy');
+    });
+
+    // Resource routes lainnya (branches, departments, dll)
     // ✅ Branch. Resource route: semua pakai prefix hris.
     Route::resource('branches', BranchController::class)->names([
         'index' => 'branches.index',
@@ -75,48 +106,5 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
-
-    // Semua route admin hanya untuk super_admin
-    Route::middleware(['role:super_admin'])->prefix('admin')->as('admin.')->group(function () {
-
-        // Manajemen Modul & Menu
-        Route::get('/menu', [MenuManagementController::class, 'index'])->name('menu.index');
-
-        // Modul
-        Route::post('/menu/module', [MenuManagementController::class, 'storeModule'])->name('menu.storeModule');
-        Route::get('/menu/module/create', [MenuManagementController::class, 'createModule'])->name('menu.createModule');
-        Route::get('/menu/module/{module}/edit', [MenuManagementController::class, 'editModule'])->name('menu.editModule');
-        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])->name('menu.updateModule');
-        Route::delete('/menu/module/{module}', [MenuManagementController::class, 'destroyModule'])->name('menu.destroyModule');
-
-        // Menu
-        Route::post('/menu', [MenuManagementController::class, 'storeMenu'])->name('menu.storeMenu');
-        Route::get('/menu/{menu}/edit', [MenuManagementController::class, 'editMenu'])->name('menu.editMenu');
-        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.updateMenu');
-        Route::delete('/menu/{menu}', [MenuManagementController::class, 'destroy'])->name('menu.destroy');
-    });
-
-});
-
-
-// API untuk dropdown dinamis
-Route::prefix('api')->group(function () {
-    Route::get('/departments', function (\Illuminate\Http\Request $request) {
-        $branchId = $request->query('branch_id');
-        $departments = \App\Modules\HRIS\Models\Department::where('branch_id', $branchId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-        return response()->json($departments);
-    });
-
-    Route::get('/units', function (\Illuminate\Http\Request $request) {
-        $deptId = $request->query('department_id');
-        $units = \App\Modules\HRIS\Models\Unit::where('department_id', $deptId)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-        return response()->json($units);
-    });
-
-    // Route::get('salary-history/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
-    // ->name('salary_history.slip');
+    // ...
 });

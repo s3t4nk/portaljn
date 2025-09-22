@@ -93,8 +93,8 @@ class MenuManagementController extends Controller
     // === MENU: EDIT ===
     public function editMenu(ModuleMenu $menu)
     {
-        $modules = Module::pluck('name', 'id');
-        $parents = ModuleMenu::where('module_id', $menu->module_id)
+        $modules = \App\Models\Module::pluck('name', 'id');
+        $parents = \App\Models\ModuleMenu::where('module_id', $menu->module_id)
             ->whereNull('parent_id')
             ->where('id', '!=', $menu->id)
             ->pluck('text', 'id');
