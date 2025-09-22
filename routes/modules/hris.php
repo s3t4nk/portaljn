@@ -76,22 +76,23 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
 
+    // Semua route admin hanya untuk super_admin
+    Route::middleware(['role:super_admin'])->prefix('admin')->as('admin.')->group(function () {
 
-    // === PANEL ADMIN DI DALAM HRIS ===
-    Route::prefix('admin')->middleware(['role:super_admin'])->as('admin.')->group(function () {
+        // Manajemen Modul & Menu
         Route::get('/menu', [MenuManagementController::class, 'index'])->name('menu.index');
 
         // Modul
-        Route::get('/menu/module/create', [MenuManagementController::class, 'createModule'])->name('menu.create.module');
-        Route::post('/menu/module', [MenuManagementController::class, 'storeModule']);
-        Route::get('/menu/module/{module}/edit', [MenuManagementController::class, 'editModule'])->name('menu.edit.module');
-        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule']);
+        Route::post('/menu/module', [MenuManagementController::class, 'storeModule'])->name('menu.storeModule');
+        Route::get('/menu/module/create', [MenuManagementController::class, 'createModule'])->name('menu.createModule');
+        Route::get('/menu/module/{module}/edit', [MenuManagementController::class, 'editModule'])->name('menu.editModule');
+        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])->name('menu.updateModule');
+        Route::delete('/menu/module/{module}', [MenuManagementController::class, 'destroyModule'])->name('menu.destroyModule');
 
-        // // Menu
-        Route::get('/menu/create', [MenuManagementController::class, 'createMenu'])->name('menu.create.menu');
-        Route::post('/menu', [MenuManagementController::class, 'storeMenu']);
-        Route::get('/menu/{menu}/edit', [MenuManagementController::class, 'editMenu'])->name('menu.edit.menu');
-        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu']);
+        // Menu
+        Route::post('/menu', [MenuManagementController::class, 'storeMenu'])->name('menu.storeMenu');
+        Route::get('/menu/{menu}/edit', [MenuManagementController::class, 'editMenu'])->name('menu.editMenu');
+        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.updateMenu');
         Route::delete('/menu/{menu}', [MenuManagementController::class, 'destroy'])->name('menu.destroy');
     });
 

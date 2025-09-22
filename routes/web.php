@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Log;
 
 // ===========================
 // === AUTH ROUTES (Breeze) ===
@@ -21,8 +22,12 @@ Route::middleware(['auth'])->group(function () {
         return view('portal.dashboard');
     })->name('portal.dashboard');
 
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    // Load HRIS routes
+    if (file_exists(__DIR__.'/modules/hris.php')) {
+        require __DIR__.'/modules/hris.php';
+    } else {
+        Log::warning('File routes/modules/hris.php tidak ditemukan!');
+    }
 });
 
 // ===========================

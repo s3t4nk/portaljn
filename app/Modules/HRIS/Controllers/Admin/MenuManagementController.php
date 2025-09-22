@@ -9,20 +9,19 @@ use Illuminate\Http\Request;
 
 class MenuManagementController extends Controller
 {
-    // === INDEX ===
     public function index()
     {
         $modules = Module::with('menus.children')->orderBy('order')->get();
         return view('modules.hris.admin.menu.index', compact('modules'));
     }
 
-    // === MODUL: CREATE ===
+    // === MODUL: TAMPILKAN FORM TAMBAH ===
     public function createModule()
     {
         return view('modules.hris.admin.menu.create_module');
     }
 
-    // === MODUL: STORE ===
+    // === MODUL: SIMPAN KE DATABASE ===
     public function storeModule(Request $request)
     {
         $request->validate([
@@ -34,9 +33,7 @@ class MenuManagementController extends Controller
         ]);
 
         Module::create($request->all());
-
-        return redirect()->route('hris.admin.menu.index')
-                         ->with('success', 'Modul berhasil ditambahkan.');
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Modul berhasil ditambahkan.');
     }
 
     // === MODUL: EDIT ===
@@ -57,12 +54,17 @@ class MenuManagementController extends Controller
         ]);
 
         $module->update($request->all());
-
-        return redirect()->route('hris.admin.menu.index')
-                         ->with('success', 'Modul berhasil diperbarui.');
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Modul berhasil diperbarui.');
     }
 
-    // === MENU: CREATE ===
+    // === MODUL: HAPUS ===
+    public function destroyModule(Module $module)
+    {
+        $module->delete();
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Modul berhasil dihapus.');
+    }
+
+    // === MENU: TAMPILKAN FORM TAMBAH ===
     public function createMenu()
     {
         $modules = Module::pluck('name', 'id');
@@ -70,7 +72,7 @@ class MenuManagementController extends Controller
         return view('modules.hris.admin.menu.create_menu', compact('modules', 'parents'));
     }
 
-    // === MENU: STORE ===
+    // === MENU: SIMPAN ===
     public function storeMenu(Request $request)
     {
         $request->validate([
@@ -80,14 +82,12 @@ class MenuManagementController extends Controller
             'icon' => 'nullable|string|max:50',
             'parent_id' => 'nullable|exists:module_menus,id',
             'order' => 'integer|min:0',
-            'permission' => 'nullable|string|max:100',
+            'permission' => 'nullable|string|max:50',
             'is_active' => 'boolean'
         ]);
 
         ModuleMenu::create($request->all());
-
-        return redirect()->route('hris.admin.menu.index')
-                         ->with('success', 'Menu berhasil ditambahkan.');
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Menu berhasil ditambahkan.');
     }
 
     // === MENU: EDIT ===
@@ -95,9 +95,9 @@ class MenuManagementController extends Controller
     {
         $modules = Module::pluck('name', 'id');
         $parents = ModuleMenu::where('module_id', $menu->module_id)
-                            ->whereNull('parent_id')
-                            ->where('id', '!=', $menu->id)
-                            ->pluck('text', 'id');
+            ->whereNull('parent_id')
+            ->where('id', '!=', $menu->id)
+            ->pluck('text', 'id');
 
         return view('modules.hris.admin.menu.edit_menu', compact('menu', 'modules', 'parents'));
     }
@@ -112,21 +112,18 @@ class MenuManagementController extends Controller
             'icon' => 'nullable|string|max:50',
             'parent_id' => 'nullable|exists:module_menus,id',
             'order' => 'integer|min:0',
-            'permission' => 'nullable|string|max:100',
+            'permission' => 'nullable|string|max:50',
             'is_active' => 'boolean'
         ]);
 
         $menu->update($request->all());
-
-        return redirect()->route('hris.admin.menu.index')
-                         ->with('success', 'Menu berhasil diperbarui.');
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Menu berhasil diperbarui.');
     }
 
-    // === MENU: DELETE ===
+    // === MENU: HAPUS ===
     public function destroy(ModuleMenu $menu)
     {
         $menu->delete();
-
-        return back()->with('success', 'Menu berhasil dihapus.');
+        return redirect()->route('hris.admin.menu.index')->with('success', 'Menu berhasil dihapus.');
     }
 }
