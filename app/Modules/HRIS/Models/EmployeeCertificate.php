@@ -26,7 +26,7 @@ class EmployeeCertificate extends Model
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class, 'nik', 'nik');
+        return $this->belongsTo(Employee::class, 'employee_number', 'employee_number');
     }
 
     public function category()
@@ -53,5 +53,4 @@ class EmployeeCertificate extends Model
     {
         return $this->document_path ? Storage::url($this->document_path) : '#';
     }
-    
 }

@@ -1,5 +1,4 @@
 @extends('layouts.hris')
-
 @section('title', 'Detail Karyawan: ' . $employee->name)
 @section('content_header')
     <h1><i class="fas fa-user-tie"></i> Detail Karyawan</h1>
@@ -19,6 +18,7 @@
             <button type="button" class="close" data-dismiss="alert">&times;</button>
         </div>
     @endif
+    
 
     <div class="row">
         <!-- Avatar & Info Singkat -->
@@ -29,9 +29,8 @@
                     <h5 class="widget-user-desc">{{ $employee->position?->name ?? '-' }}</h5>
                 </div>
                 <div class="widget-user-image">
-                    <img class="img-circle elevation-2"
-                        src="https://ui-avatars.com/api/?name={{ urlencode($employee->name) }}&background=3f679c&color=fff"
-                        alt="User Avatar">
+                    <img src="{{ $employee->photo ? asset('storage/' . $employee->photo) : 'https://via.placeholder.com/150?text=No+Photo' }}"
+                        alt="Foto {{ $employee->name }}" class="img-fluid rounded">
                 </div>
                 <div class="card-footer">
                     <div class="row">
@@ -92,19 +91,14 @@
                                 <dt class="col-sm-4">Tempat, Tgl Lahir</dt>
                                 <dd class="col-sm-8">{{ $employee->birth_place }},
                                     {{ \Carbon\Carbon::parse($employee->birth_date)->format('d M Y') }}</dd>
-
                                 <dt class="col-sm-4">Jenis Kelamin</dt>
                                 <dd class="col-sm-8">{{ $employee->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</dd>
-
                                 <dt class="col-sm-4">Agama</dt>
                                 <dd class="col-sm-8">{{ $employee->religion }}</dd>
-
                                 <dt class="col-sm-4">Gol. Darah</dt>
                                 <dd class="col-sm-8">{{ $employee->blood_type ?? '-' }}</dd>
-
                                 <dt class="col-sm-4">Status Nikah</dt>
                                 <dd class="col-sm-8">{{ ucfirst(str_replace('_', ' ', $employee->marital_status)) }}</dd>
-
                                 <dt class="col-sm-4">Email</dt>
                                 <dd class="col-sm-8">{{ $employee->email ?? '-' }}</dd>
                             </dl>
@@ -115,20 +109,16 @@
                             <dl class="row">
                                 <dt class="col-sm-4">Cabang</dt>
                                 <dd class="col-sm-8">{{ $employee->branch?->name ?? '-' }}</dd>
-
                                 <dt class="col-sm-4">Divisi</dt>
                                 <dd class="col-sm-8">{{ $employee->department?->name ?? '-' }}</dd>
-
                                 <dt class="col-sm-4">Unit</dt>
                                 <dd class="col-sm-8">{{ $employee->unit?->name ?? '-' }}</dd>
-
                                 <dt class="col-sm-4">Jabatan</dt>
                                 <dd class="col-sm-8">
                                     <strong>{{ $employee->position?->name ?? '-' }}</strong>
                                     <br>
                                     <small>{{ $employee->position?->code ?? '-' }}</small>
                                 </dd>
-
                                 <dt class="col-sm-4">TMT Kerja</dt>
                                 <dd class="col-sm-8">{{ \Carbon\Carbon::parse($employee->joining_date)->format('d M Y') }}
                                 </dd>
@@ -137,29 +127,58 @@
 
                         <!-- Tab 3: Docs -->
                         <div class="tab-pane {{ $activeTab == 'docs' ? 'active show' : '' }}" id="docs">
-                            <dl class="row">
-                                <dt class="col-sm-4">NIK KTP</dt>
-                                <dd class="col-sm-8">{{ $employee->id_card_number }}</dd>
+                            <h5>Dokumen Digital</h5>
+                            @if ($certificates->isEmpty())
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Belum ada dokumen digital yang diunggah.
+                                </div>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Kategori</th>
+                                                <th>Nomor</th>
+                                                <th>Tanggal Terbit</th>
+                                                <th>Kadaluarsa</th>
+                                                <th>Status</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($certificates as $cert)
+                                                <tr>
+                                                    <td>{{ $cert->category?->name ?? $cert->type }}</td>
+                                                    <td>{{ $cert->number ?? '-' }}</td>
+                                                    <td>{{ $cert->issued_date ? \Carbon\Carbon::parse($cert->issued_date)->format('d M Y') : '-' }}
+                                                    </td>
+                                                    <td>{{ $cert->expiry_date ? \Carbon\Carbon::parse($cert->expiry_date)->format('d M Y') : 'Tidak ada' }}
+                                                    </td>
+                                                    <td>{!! $cert->statusBadge !!}</td>
+                                                    <td>
+                                                        @if ($cert->document_path)
+                                                            <a href="{{ $cert->documentUrl }}" target="_blank"
+                                                                class="btn btn-sm btn-info">
+                                                                <i class="fas fa-download"></i> Unduh
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">Tidak ada file</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
 
-                                <dt class="col-sm-4">KK</dt>
-                                <dd class="col-sm-8">{{ $employee->family_card_number ?? '-' }}</dd>
-
-                                <dt class="col-sm-4">NPWP</dt>
-                                <dd class="col-sm-8">{{ $employee->npwp_number ?? '-' }}</dd>
-
-                                <dt class="col-sm-4">BPJS Ketenagakerjaan</dt>
-                                <dd class="col-sm-8">{{ $employee->bpjs_ketenagakerjaan ?? '-' }}</dd>
-
-                                <dt class="col-sm-4">BPJS Kesehatan</dt>
-                                <dd class="col-sm-8">{{ $employee->bpjs_kesehatan ?? '-' }}</dd>
-
-                                <dt class="col-sm-4">Kontak Darurat</dt>
-                                <dd class="col-sm-8">
-                                    {{ $employee->emergency_contact_name }}<br>
-                                    Hubungan: {{ $employee->emergency_contact_relation }}<br>
-                                    No: {{ $employee->emergency_contact_phone }}
-                                </dd>
-                            </dl>
+                            <!-- Tombol tambah dokumen -->
+                            <div class="mt-3">
+                                <a href="{{ route('hris.certificates.create', $employee->employee_number) }}"
+                                    class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus"></i> Tambah Dokumen
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Tab: Gaji -->
@@ -213,51 +232,32 @@
                                                                     {{ ucfirst($hist->status) }}
                                                                 </span>
                                                             </td>
+                                                            <td>
+                                                                <!-- Tombol Download Slip Gaji per bulan -->
+                                                                <a href="{{ route('hris.employees.slip', ['id' => $employee->id, 'period' => $hist->period]) }}"
+                                                                    class="btn btn-sm btn-success" target="_blank">
+                                                                    <i class="fas fa-file-pdf"></i> Download
+                                                                </a>
+                                                            </td>
                                                         </tr>
                                                     @endforeach
                                                 </tbody>
                                             </table>
-                                            <td>
-                                                <div class="row mt-3">
-                                                    <div class="col-12 text-right">
-                                                        <a href="{{ route('hris.employees.slip', $employee->id) }}"
-                                                            class="btn btn-success mr-2" target="_blank">
-                                                            <i class="fas fa-file-pdf"></i> Download Slip Gaji
-                                                        </a>
-                                                        <a href="{{ route('hris.employees.edit', $employee) }}"
-                                                            class="btn btn-warning mr-2">
-                                                            <i class="fas fa-edit"></i> Edit Data
-                                                        </a>
-                                                        <a href="{{ route('hris.employees.index') }}"
-                                                            class="btn btn-secondary">
-                                                            <i class="fas fa-arrow-left"></i> Kembali
-                                                        </a>
-                                                    </div>
+
+                                            <div class="row mt-3">
+                                                <div class="col-12 text-right">
+                                                    <a href="{{ route('hris.employees.slip', $employee->id) }}"
+                                                        class="btn btn-success mr-2" target="_blank">
+                                                        <i class="fas fa-file-pdf"></i> Download Slip Gaji
+                                                    </a>
                                                 </div>
-                                            </td>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-3">
-        <div class="col-12">
-            <div class="card card-outline card-success">
-                <div class="card-header">
-                    <h3 class="card-title">Struktur Gaji</h3>
-                </div>
-                <div class="card-body">
-                    <p><strong>Gaji Pokok:</strong> Rp
-                        {{ number_format($employee->position?->salaryGrade?->base_salary ?? 0, 0, ',', '.') }}</p>
-                    <p><strong>Total Estimasi Gaji:</strong> <strong>Rp
-                            {{ number_format($employee->total_salary, 0, ',', '.') }}</strong></p>
-                    <small class="text-muted">Termasuk tunjangan berdasarkan grade, jabatan, dan tipe pegawai.</small>
                 </div>
             </div>
         </div>
@@ -274,8 +274,6 @@
         </div>
     </div>
 @stop
-
-
 
 @section('js')
     <script>

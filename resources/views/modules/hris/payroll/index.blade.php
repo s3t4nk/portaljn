@@ -15,6 +15,12 @@
 
 @section('content')
     <div class="row">
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+            </div>
+        @endif
         <div class="col-12">
             <div class="card card-outline card-primary">
                 <div class="card-header">
@@ -37,6 +43,18 @@
                     @endphp
                         <td>{{ $formattedPeriod }}</td>
                     </h3>
+                    <form method="POST" action="{{ route('hris.payroll.generate') }}" class="mb-3">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="month" name="period" class="form-control"
+                                    value="{{ request('period', now()->format('Y-m')) }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary">Generate Payroll</button>
+                            </div>
+                        </div>
+                    </form>
                     <div class="card-tools">
                         <form method="GET" class="input-group input-group-sm" style="width: 250px;">
                             <input type="month" name="period" class="form-control"
@@ -50,6 +68,7 @@
                 <div class="card-body p-0">
                     <table class="table table-striped">
                         <thead>
+
                             <tr>
                                 <th><input type="checkbox" id="select-all"></th>
                                 <th>Nama Karyawan</th>
@@ -85,6 +104,9 @@
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-success">Bayar</button>
                                             </form>
+                                        @elseif($p->status == 'paid')
+                                            <span class="badge badge-success">Sudah Dibayar</span>
+                                            <!-- Tidak ada tombol, tidak bisa diubah -->
                                         @endif
                                     </td>
                                 </tr>
@@ -121,4 +143,30 @@
             </div>
         </div>
     </div>
+@stop
+@section('js')
+<script>
+$(document).ready(function() {
+    // Select All
+    $('#select-all').on('click', function() {
+        $('input[name="ids[]"]').prop('checked', $(this).prop('checked'));
+    });
+
+    // DataTable
+    $('#salaryHistoryTable').DataTable({
+        "paging": true,
+        "lengthChange": true,
+        "pageLength": 5,
+        "lengthMenu": [5, 10, 25, 50],
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "autoWidth": false,
+        "responsive": true,
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json"
+        }
+    });
+});
+</script>
 @stop

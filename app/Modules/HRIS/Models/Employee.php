@@ -76,7 +76,12 @@ class Employee extends Model
     }
 
     public function certificates()
-{
-    return $this->hasMany(EmployeeCertificate::class, 'nik', 'nik');
-}
+    {
+        return $this->hasMany(EmployeeCertificate::class, 'nik', 'nik');
+    }
+
+    public function getNikAttribute()
+    {
+        return $this->employee_number;
+    }
 }

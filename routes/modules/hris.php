@@ -17,9 +17,32 @@ use App\Modules\HRIS\Controllers\EmployeeController;
 use App\Modules\HRIS\Controllers\PayrollController;
 use App\Modules\HRIS\Controllers\EmployeeSalaryHistoryController;
 use App\Modules\HRIS\Controllers\CertificateController;
+use Illuminate\Http\Request;
+
 //use Illuminate\Support\Facades\Log;
 
 Log::info('✅ use statement berhasil');
+
+// ========================
+// 🔥 API UNTUK DROPDOWN — HARUS DI LUAR GRUP AUTH
+// ========================
+Route::get('/api/departments', function (Request $request) {
+    $branchId = $request->get('branch_id');
+    if (!$branchId) {
+        return response()->json([]);
+    }
+    $departments = \App\Modules\HRIS\Models\Department::where('branch_id', $branchId)->get(['id', 'name']);
+    return response()->json($departments);
+})->name('api.departments');
+
+Route::get('/api/units', function (Request $request) {
+    $deptId = $request->get('department_id');
+    if (!$deptId) {
+        return response()->json([]);
+    }
+    $units = \App\Modules\HRIS\Models\Unit::where('department_id', $deptId)->get(['id', 'name']);
+    return response()->json($units);
+})->name('api.units');
 
 
 // Grup utama HRIS
@@ -52,7 +75,7 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
 
     // === DIGITAL DOKUMEN: SERTIFIKAT KARYAWAN ===
-    // 🔻 Taruh DI ATAS resource yang bisa konflik (seperti employees)
+    
     Route::get('/certificates/{nik}', [CertificateController::class, 'index'])->name('certificates.index');
     Route::get('/certificates/{nik}/create', [CertificateController::class, 'create'])->name('certificates.create');
     Route::post('/certificates/{nik}', [CertificateController::class, 'store'])->name('certificates.store');
@@ -109,12 +132,15 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     // Employee
     Route::resource('employees', EmployeeController::class)->names('employees');
 
+    // Grup Payroll
     Route::prefix('payroll')->as('payroll.')->group(function () {
         Route::get('/', [PayrollController::class, 'index'])->name('index');
-        Route::post('/{payroll}/publish', [PayrollController::class, 'publish'])->name('publish');
-        Route::post('/{payroll}/pay', [PayrollController::class, 'pay'])->name('pay');
-        Route::post('payroll/approve-mass', [PayrollController::class, 'approveMass'])->name('payroll.approve-mass');
+        Route::post('/generate', [PayrollController::class, 'generate'])->name('generate');
+        Route::post('/{id}/publish', [PayrollController::class, 'publish'])->name('publish');
+        Route::post('/{id}/pay', [PayrollController::class, 'pay'])->name('pay');
+        Route::post('/approve-mass', [PayrollController::class, 'approveMass'])->name('approve-mass');
     });
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
+    
 });
