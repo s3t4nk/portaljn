@@ -13,21 +13,23 @@
 @stop
 
 @section('content')
+    @if ($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Ada kesalahan:</strong>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    @endif
+
     <div class="card card-outline card-primary">
         <div class="card-header">
             <h3 class="card-title">Form Registrasi Karyawan</h3>
         </div>
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong>Ada kesalahan:</strong>
-                <ul class="mb-0">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-            </div>
-        @endif
+
         <form action="{{ route('hris.employees.store') }}" method="POST" id="multi-step-form">
             @csrf
 
@@ -39,13 +41,11 @@
                         <p>Data Pribadi</p>
                     </div>
                     <div class="step text-center flex-fill">
-                        <button type="button" class="btn btn-lg btn-circle btn-secondary step-btn"
-                            data-step="2">2</button>
+                        <button type="button" class="btn btn-lg btn-circle btn-secondary step-btn" data-step="2">2</button>
                         <p>Data Pekerjaan</p>
                     </div>
                     <div class="step text-center flex-fill">
-                        <button type="button" class="btn btn-lg btn-circle btn-secondary step-btn"
-                            data-step="3">3</button>
+                        <button type="button" class="btn btn-lg btn-circle btn-secondary step-btn" data-step="3">3</button>
                         <p>Dokumen & Lainnya</p>
                     </div>
                 </div>
@@ -58,7 +58,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>NIK Karyawan <span class="text-danger">*</span></label>
-                                <input type="text" name="employee_number" class="form-control" required>
+                                <input type="text" name="employee_number" id="nik_input" class="form-control" required>
                                 <small class="text-success">
                                     Email akan dibuat otomatis:
                                     <strong id="auto-email-preview">______@jembatannusantara.co.id</strong>
@@ -116,8 +116,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Golongan Darah</label>
-                                <input type="text" name="blood_type" class="form-control" maxlength="3"
-                                    placeholder="A, B+, AB-">
+                                <input type="text" name="blood_type" class="form-control" maxlength="3" placeholder="A, B+, AB-">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -141,8 +140,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Kode Pos</label>
-                                <input type="text" name="postal_pos" class="form-control" maxlength="10"
-                                    placeholder="misal: 69116">
+                                <input type="text" name="postal_pos" class="form-control" maxlength="10" placeholder="misal: 69116">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -153,26 +151,20 @@
                         </div>
                     </div>
                     <div class="row">
-                        {{-- <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" name="email" class="form-control">
-                            </div>
-                        </div> --}}
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Pendidikan Terakhir</label>
                                 <input type="text" name="education_level" class="form-control">
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Jurusan/Prodi</label>
                                 <input type="text" name="major" class="form-control">
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Nama Institusi</label>
@@ -190,12 +182,10 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Cabang / Kantor / Kapal <span class="text-danger">*</span></label>
-                                <select name="branch_id" class="form-control" required>
+                                <select name="branch_id" class="form-control branch-select" required>
                                     <option value="">-- Pilih --</option>
                                     @foreach ($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }}
-                                            ({{ ucfirst($branch->type) }})
-                                        </option>
+                                        <option value="{{ $branch->id }}">{{ $branch->name }} ({{ ucfirst($branch->type) }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -203,7 +193,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Divisi / Departemen <span class="text-danger">*</span></label>
-                                <select name="department_id" class="form-control" required>
+                                <select name="department_id" class="form-control department-select" required>
                                     <option value="">-- Pilih Dulu Cabang --</option>
                                 </select>
                             </div>
@@ -213,7 +203,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Unit Kerja</label>
-                                <select name="unit_id" class="form-control">
+                                <select name="unit_id" class="form-control unit-select">
                                     <option value="">-- Pilih Dulu Divisi --</option>
                                 </select>
                             </div>
@@ -221,12 +211,10 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Jabatan <span class="text-danger">*</span></label>
-                                <select name="position_id" id="position_id" class="form-control select2" required>
+                                <select name="position_id" class="form-control" required>
                                     <option value="">-- Pilih --</option>
                                     @foreach ($positions as $pos)
-                                        <option value="{{ $pos->id }}" data-type="{{ $pos->employee_type }}">
-                                            {{ $pos->name }} ({{ $pos->code }})
-                                        </option>
+                                        <option value="{{ $pos->id }}">{{ $pos->name }} ({{ $pos->code }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -308,6 +296,20 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nama Bank</label>
+                                <input type="text" name="bank_name" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nomor Rekening</label>
+                                <input type="text" name="bank_number" class="form-control">
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Nama Kontak Darurat <span class="text-danger">*</span></label>
                         <input type="text" name="emergency_contact_name" class="form-control" required>
@@ -343,143 +345,142 @@
     </div>
 @stop
 
-@section('css')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <style>
-        .select2-container {
-            width: 100% !important;
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    let currentStep = 1;
+
+    // Fungsi: Tampilkan step tertentu
+    function showStep(step) {
+        // Sembunyikan semua step
+        document.querySelectorAll('.step-content').forEach(el => {
+            el.classList.add('d-none');
+        });
+
+        // Tampilkan step aktif
+        const target = document.querySelector(`[data-step="${step}"]`);
+        if (target) {
+            target.classList.remove('d-none');
         }
 
-        .select2-selection {
-            border: 1px solid #ced4da;
-            border-radius: 0.25rem;
-            height: calc(2.25em + 0.75rem + 2px);
-            padding: 0.375rem 0.75rem;
-        }
-    </style>
-@stop
+        // Update tombol navigasi
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const submitBtn = document.getElementById('submit-btn');
 
-@section('js')
-    <script>
-        $(function() {
-            let currentStep = 1;
-            const totalSteps = 3;
-
-            // Inisialisasi Select2
-            $('.select2').select2({
-                theme: 'bootstrap4',
-                placeholder: '-- Pilih --',
-                allowClear: true
-            });
-
-            function showStep(step) {
-                $('.step-content').addClass('d-none');
-                $(`.step-content[data-step="${step}"]`).removeClass('d-none');
-
-                $('.step-btn').removeClass('btn-primary').addClass('btn-secondary');
-                $(`.step-btn[data-step="${step}"]`).removeClass('btn-secondary').addClass('btn-primary');
-
-                $('#prev-btn').prop('disabled', step === 1);
-                if (step === totalSteps) {
-                    $('#next-btn').addClass('d-none');
-                    $('#submit-btn').removeClass('d-none');
-                } else {
-                    $('#next-btn').removeClass('d-none');
-                    $('#submit-btn').addClass('d-none');
-                }
+        if (prevBtn) prevBtn.disabled = (step === 1);
+        if (nextBtn && submitBtn) {
+            if (step === 3) {
+                nextBtn.classList.add('d-none');
+                submitBtn.classList.remove('d-none');
+            } else {
+                nextBtn.classList.remove('d-none');
+                submitBtn.classList.add('d-none');
             }
+        }
 
-            // Show initial step
+        // Update progress button
+        document.querySelectorAll('.step-btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        });
+        document.querySelector(`.step-btn[data-step="${step}"]`).classList.remove('btn-secondary');
+        document.querySelector(`.step-btn[data-step="${step}"]`).classList.add('btn-primary');
+    }
+
+    // Inisialisasi
+    showStep(currentStep);
+
+    // Tombol Lanjut
+    document.getElementById('next-btn')?.addEventListener('click', function () {
+        if (currentStep < 3) {
+            currentStep++;
             showStep(currentStep);
+        }
+    });
 
-            // Next button
-            $('#next-btn').click(function() {
-                if (currentStep < totalSteps) {
-                    currentStep++;
-                    showStep(currentStep);
-                }
-            });
+    // Tombol Kembali
+    document.getElementById('prev-btn')?.addEventListener('click', function () {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
 
-            // Prev button
-            $('#prev-btn').click(function() {
-                if (currentStep > 1) {
-                    currentStep--;
-                    showStep(currentStep);
-                }
-            });
-
-            // Step buttons
-            $('.step-btn').click(function() {
-                const step = parseInt($(this).data('step'));
-                if (step <= currentStep) {
-                    currentStep = step;
-                    showStep(currentStep);
-                }
-            });
-
-            // Dynamic Department & Unit
-            $('select[name="branch_id"]').change(function() {
-                const branchId = $(this).val();
-                $.get(`/api/departments?branch_id=${branchId}`, function(data) {
-                    $('select[name="department_id"]').html('<option value="">-- Pilih --</option>');
-                    data.forEach(d => {
-                        $('select[name="department_id"]').append(
-                            `<option value="${d.id}">${d.name}</option>`);
-                    });
-                    $('select[name="unit_id"]').html(
-                        '<option value="">-- Pilih Dulu Divisi --</option>');
-                });
-            });
-
-            $('select[name="department_id"]').change(function() {
-                const deptId = $(this).val();
-                $.get(`/api/units?department_id=${deptId}`, function(data) {
-                    $('select[name="unit_id"]').html('<option value="">-- Pilih --</option>');
-                    data.forEach(u => {
-                        $('select[name="unit_id"]').append(
-                            `<option value="${u.id}">${u.name}</option>`);
-                    });
-                });
-            });
-
-            // Show/hide kontrak fields
-            $('select[name="employment_status"]').change(function() {
-                if ($(this).val() === 'kontrak') {
-                    $('.contract-fields').removeClass('d-none');
-                } else {
-                    $('.contract-fields').addClass('d-none');
-                }
-            });
-
-            // Auto-fill email from NIK
-            $('input[name="employee_number"]').blur(function() {
-                const nik = $(this).val();
-                if (nik && !$('input[name="email"]').val()) {
-                    const email = nik + '@jembatannusantara.co.id';
-                    $('input[name="email"]').val(email);
-                }
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const nikInput = document.querySelector('input[name="employee_number"]');
-            const emailPreview = document.getElementById('auto-email-preview');
-
-            // Fungsi update preview
-            function updateEmailPreview() {
-                const nik = nikInput.value.trim();
-                if (nik) {
-                    emailPreview.textContent = `${nik}@jembatannusantara.co.id`;
-                } else {
-                    emailPreview.textContent = '______@jembatannusantara.co.id';
-                }
+    // Navigasi cepat via tombol step
+    document.querySelectorAll('.step-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const step = parseInt(this.getAttribute('data-step'));
+            if (step <= currentStep) {
+                currentStep = step;
+                showStep(currentStep);
             }
-
-            // Jalankan saat halaman load (untuk data lama setelah validation fail)
-            updateEmailPreview();
-
-            // Update saat ketik
-            nikInput.addEventListener('input', updateEmailPreview);
         });
-    </script>
-@stop
+    });
+
+    // Dynamic Department & Unit
+    document.querySelector('.branch-select')?.addEventListener('change', function () {
+        const branchId = this.value;
+        if (!branchId) return;
+
+        fetch(`/api/departments?branch_id=${branchId}`)
+            .then(res => res.json())
+            .then(data => {
+                const deptSelect = document.querySelector('.department-select');
+                deptSelect.innerHTML = '<option value="">-- Pilih --</option>';
+                data.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    deptSelect.appendChild(opt);
+                });
+                document.querySelector('.unit-select').innerHTML = '<option value="">-- Pilih Dulu Divisi --</option>';
+            })
+            .catch(err => console.error('Gagal muat departemen:', err));
+    });
+
+    document.querySelector('.department-select')?.addEventListener('change', function () {
+        const deptId = this.value;
+        if (!deptId) return;
+
+        fetch(`/api/units?department_id=${deptId}`)
+            .then(res => res.json())
+            .then(data => {
+                const unitSelect = document.querySelector('.unit-select');
+                unitSelect.innerHTML = '<option value="">-- Pilih --</option>';
+                data.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name;
+                    unitSelect.appendChild(opt);
+                });
+            })
+            .catch(err => console.error('Gagal muat unit:', err));
+    });
+
+    // Show/hide kontrak fields
+    document.querySelector('select[name="employment_status"]')?.addEventListener('change', function () {
+        const contractFields = document.querySelector('.contract-fields');
+        if (this.value === 'kontrak') {
+            contractFields?.classList.remove('d-none');
+        } else {
+            contractFields?.classList.add('d-none');
+        }
+    });
+
+    // Auto-generate Email Preview
+    const nikInput = document.getElementById('nik_input');
+    const emailPreview = document.getElementById('auto-email-preview');
+
+    function updateEmailPreview() {
+        const nik = nikInput?.value.trim() || '';
+        emailPreview.textContent = nik ? `${nik}@jembatannusantara.co.id` : '______@jembatannusantara.co.id';
+    }
+
+    if (nikInput && emailPreview) {
+        nikInput.addEventListener('input', updateEmailPreview);
+        updateEmailPreview(); // Initial call
+    }
+});
+</script>
+@endpush

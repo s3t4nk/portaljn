@@ -1,6 +1,9 @@
 <?php
+
 use Illuminate\Support\Facades\Log;
+
 Log::info('🔧 DEBUG: Memulai eksekusi hris.php');
+
 use Illuminate\Support\Facades\Route;
 use App\Modules\HRIS\Controllers\HrisController;
 use App\Modules\HRIS\Controllers\Admin\MenuManagementController;
@@ -13,6 +16,7 @@ use App\Modules\HRIS\Controllers\SalaryComponentController;
 use App\Modules\HRIS\Controllers\EmployeeController;
 use App\Modules\HRIS\Controllers\PayrollController;
 use App\Modules\HRIS\Controllers\EmployeeSalaryHistoryController;
+use App\Modules\HRIS\Controllers\CertificateController;
 //use Illuminate\Support\Facades\Log;
 
 Log::info('✅ use statement berhasil');
@@ -20,34 +24,41 @@ Log::info('✅ use statement berhasil');
 
 // Grup utama HRIS
 Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
-    
-     Log::info('✅ Grup admin dimulai');
+
+    Log::info('✅ Grup admin dimulai');
     // Dashboard & Resource lainnya
     Route::get('/dashboard', [HrisController::class, 'dashboard'])->name('dashboard');
 
-    // Semua route admin hanya untuk super_admin
+    // === PANEL MANAJEMEN MENU (FRESH START) ===
     Route::middleware(['role:super_admin'])->prefix('admin')->as('admin.')->group(function () {
-         Log::info('✅ Route menu.index terdaftar');
-        // === MANAJEMEN MENU ===
-        Route::get('/menu', [MenuManagementController::class, 'index'])->name('menu.index');
-        Log::info('✅ Route update.menu terdaftar');
+
         // Modul
+        Route::get('/menu', [MenuManagementController::class, 'index'])->name('menu.index');
+
         Route::get('/menu/module/create', [MenuManagementController::class, 'createModule'])->name('menu.module.create');
         Route::post('/menu/module', [MenuManagementController::class, 'storeModule'])->name('menu.module.store');
+
         Route::get('/menu/module/{module}/edit', [MenuManagementController::class, 'editModule'])->name('menu.module.edit');
-        //Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])->name('menu.module.update');
-        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])
-    ->name('menu.update.module');
+        Route::put('/menu/module/{module}', [MenuManagementController::class, 'updateModule'])->name('menu.module.update');
         Route::delete('/menu/module/{module}', [MenuManagementController::class, 'destroyModule'])->name('menu.module.destroy');
 
         // Menu
         Route::get('/menu/create', [MenuManagementController::class, 'createMenu'])->name('menu.menu.create');
         Route::post('/menu', [MenuManagementController::class, 'storeMenu'])->name('menu.menu.store');
+
         Route::get('/menu/{menu}/edit', [MenuManagementController::class, 'editMenu'])->name('menu.menu.edit');
-        //Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.menu.update');
-        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.update.menu');
+        Route::put('/menu/{menu}', [MenuManagementController::class, 'updateMenu'])->name('menu.menu.update');
         Route::delete('/menu/{menu}', [MenuManagementController::class, 'destroy'])->name('menu.menu.destroy');
     });
+
+    // === DIGITAL DOKUMEN: SERTIFIKAT KARYAWAN ===
+    // 🔻 Taruh DI ATAS resource yang bisa konflik (seperti employees)
+    Route::get('/certificates/{nik}', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/certificates/{nik}/create', [CertificateController::class, 'create'])->name('certificates.create');
+    Route::post('/certificates/{nik}', [CertificateController::class, 'store'])->name('certificates.store');
+    Route::get('/certificates/{nik}/{id}/edit', [CertificateController::class, 'edit'])->name('certificates.edit');
+    Route::put('/certificates/{nik}/{id}', [CertificateController::class, 'update'])->name('certificates.update');
+    Route::delete('/certificates/{nik}/{id}', [CertificateController::class, 'destroy'])->name('certificates.destroy');
 
     // Resource routes lainnya (branches, departments, dll)
     // ✅ Branch. Resource route: semua pakai prefix hris.
@@ -106,5 +117,4 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
-    // ...
 });

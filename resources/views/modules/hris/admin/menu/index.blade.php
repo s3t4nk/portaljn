@@ -26,7 +26,7 @@
             <div class="card-header">
                 <h3 class="card-title">{{ $module->name }} ({{ $module->slug }})</h3>
             </div>
-            <div
+            {{-- <div
                 style="position: fixed; top: 10px; right: 10px; background: white; border: 1px solid #ccc; padding: 10px; z-index: 9999;">
                 <strong>User:</strong> {{ auth()->user()->name }}<br>
                 <strong>Role:</strong>
@@ -38,7 +38,7 @@
                 @foreach (auth()->user()->getAllPermissions() as $permission)
                     <span class="badge bg-info">{{ $permission->name }}</span>
                 @endforeach
-            </div>
+            </div> --}}
             <div class="card-body p-0">
                 <table class="table table-striped">
                     <thead>

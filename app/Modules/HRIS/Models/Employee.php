@@ -4,6 +4,7 @@ namespace App\Modules\HRIS\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Modules\HRIS\Models\EmployeeCertificate;
 
 class Employee extends Model
 {
@@ -73,4 +74,9 @@ class Employee extends Model
     {
         return $this->salaryHistories()->latest('period')->first();
     }
+
+    public function certificates()
+{
+    return $this->hasMany(EmployeeCertificate::class, 'nik', 'nik');
+}
 }
