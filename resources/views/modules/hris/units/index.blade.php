@@ -147,7 +147,7 @@
     </div>
 @stop
 
-@section('js')
+@push('js')
     <script>
         // Isi modal edit
         $('#modal-edit').on('show.bs.modal', function (event) {
@@ -185,4 +185,4 @@
         // Auto-close alert
         $('.alert').delay(3000).fadeOut();
     </script>
-@stop
+@endpush

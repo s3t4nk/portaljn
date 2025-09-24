@@ -275,7 +275,7 @@
     </div>
 @stop
 
-@section('js')
+@push('js')
     <script>
         $(function() {
             $('#salaryHistoryTable').DataTable({
@@ -297,4 +297,4 @@
     <script>
         $('.alert').delay(3000).fadeOut();
     </script>
-@stop
+@endpush

@@ -12,7 +12,7 @@
 @stop
 
 @section('content')
-    @if(session('success'))
+    @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
             <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -40,29 +40,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($departments as $dept)
-                    <tr>
-                        <td>{{ $dept->name }}</td>
-                        <td>{{ $dept->branch?->name ?? '-' }}</td>
-                        <td>{{ Str::limit($dept->description, 80) }}</td>
-                        <td class="text-center" style="width: 15%;">
-                            <button type="button" class="btn btn-sm btn-warning" data-toggle="modal"
-                                data-target="#modal-edit"
-                                data-id="{{ $dept->id }}"
-                                data-name="{{ $dept->name }}"
-                                data-branch_id="{{ $dept->branch_id }}"
-                                data-description="{{ $dept->description }}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <form action="{{ route('hris.departments.destroy', $dept) }}" method="POST" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">
-                                    <i class="fas fa-trash"></i>
+                    @foreach ($departments as $dept)
+                        <tr>
+                            <td>{{ $dept->name }}</td>
+                            <td>{{ $dept->branch?->name ?? '-' }}</td>
+                            <td>{{ Str::limit($dept->description, 80) }}</td>
+                            <td class="text-center" style="width: 15%;">
+                                <button type="button" class="btn btn-sm btn-warning" data-toggle="modal"
+                                    data-target="#modal-edit" data-id="{{ $dept->id }}" data-name="{{ $dept->name }}"
+                                    data-branch_id="{{ $dept->branch_id }}" data-description="{{ $dept->description }}">
+                                    <i class="fas fa-edit"></i>
                                 </button>
-                            </form>
-                        </td>
-                    </tr>
+                                <form action="{{ route('hris.departments.destroy', $dept) }}" method="POST"
+                                    style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Hapus?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -88,8 +86,10 @@
                             <label>Cabang / Kantor Pusat / Kapal</label>
                             <select name="branch_id" class="form-control" required>
                                 <option value="">-- Pilih --</option>
-                                @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->name }} ({{ ucfirst($branch->type) }})</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}
+                                        ({{ ucfirst($branch->type) }})
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -114,6 +114,7 @@
                 <form id="form-edit" method="POST">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" id="edit-id" name="id">
                     <div class="modal-header">
                         <h5 class="modal-title">Edit Departemen</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -127,8 +128,10 @@
                             <label>Cabang / Kantor Pusat / Kapal</label>
                             <select name="branch_id" id="edit-branch_id" class="form-control" required>
                                 <option value="">-- Pilih --</option>
-                                @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->name }} ({{ ucfirst($branch->type) }})</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}
+                                        ({{ ucfirst($branch->type) }})
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -147,27 +150,35 @@
     </div>
 @stop
 
-@section('js')
+@push('js')
     <script>
-        // Isi modal edit
-        $('#modal-edit').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget);
-            var id = button.data('id');
-            var name = button.data('name');
-            var branch_id = button.data('branch_id');
-            var description = button.data('description');
+        $(document).ready(function() {
+            // Handle modal edit
+            $('#modal-edit').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var id = button.data('id');
+                var name = button.data('name');
+                var branch_id = button.data('branch_id');
+                var description = button.data('description');
 
-            var action = "{{ url('/hris/departments') }}/" + id;
+                // ✅ Pastikan id valid
+                if (!id) {
+                    alert('Error: ID departemen tidak ditemukan.');
+                    return;
+                }
 
-            var modal = $(this);
-            modal.find('#edit-name').val(name);
-            modal.find('#edit-branch_id').val(branch_id);
-            modal.find('#edit-description').val(description);
-            modal.find('#form-edit').attr('action', action);
-        });
+                // ✅ Gunakan route() helper Laravel
+                var action = "{{ route('hris.departments.update', ['department' => ':id']) }}".replace(
+                    ':id', id);
 
-        // Inisialisasi DataTable
-        $(function () {
+                var modal = $(this);
+                modal.find('#edit-name').val(name);
+                modal.find('#edit-branch_id').val(branch_id);
+                modal.find('#edit-description').val(description);
+                modal.find('#form-edit').attr('action', action);
+            });
+
+            // DataTable
             $('#table-departments').DataTable({
                 "paging": true,
                 "lengthChange": true,
@@ -180,9 +191,9 @@
                     "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json"
                 }
             });
-        });
 
-        // Auto-close alert
-        $('.alert').delay(3000).fadeOut();
+            // Auto-close alert
+            $('.alert').delay(3000).fadeOut();
+        });
     </script>
-@stop
+@endpush
