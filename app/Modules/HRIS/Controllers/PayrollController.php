@@ -3,52 +3,86 @@
 namespace App\Modules\HRIS\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\HRIS\Models\Employee;
 use App\Modules\HRIS\Models\EmployeeSalaryHistory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
-    public function index()
-{
-    $period = request('period', now()->format('Y-m'));
+    public function index(Request $request)
+    {
+        $period = $request->input('period', date('Y-m'));
+        $payrolls = EmployeeSalaryHistory::with('employee')
+            ->where('period', $period)
+            ->latest()
+            ->paginate(20);
 
-    // Cek apakah periode valid (tidak di masa depan)
-    $currentPeriod = now()->format('Y-m');
-    if ($period > $currentPeriod) {
-        return back()->with('error', "Periode {$period} tidak valid. Hanya bisa proses periode sekarang atau sebelumnya.");
+        return view('modules.hris.payroll.index', compact('payrolls', 'period'));
     }
 
-    $payrolls = EmployeeSalaryHistory::with('employee')
-        ->where('period', $period)
-        ->whereIn('status', ['draft', 'published'])
-        ->orderBy('status', 'desc')
-        ->paginate(25);
-
-    return view('modules.hris.payroll.index', compact('payrolls', 'period'));
-}
-
-    public function publish(Request $request, EmployeeSalaryHistory $payroll)
+    public function generate(Request $request)
     {
-        // Hanya boleh publish jika status draft
-        if ($payroll->status !== 'draft') {
-            return back()->with('error', 'Hanya draft yang bisa dipublish.');
+        $period = $request->input('period', date('Y-m'));
+        $employees = Employee::with(['position.salaryGrade', 'salaryComponents'])->get();
+
+        foreach ($employees as $emp) {
+            // Skip jika sudah ada histori untuk periode ini
+            if (EmployeeSalaryHistory::where('employee_id', $emp->id)->where('period', $period)->exists()) {
+                continue;
+            }
+
+            $base = $emp->position?->salaryGrade?->base_salary ?? 0;
+            $components = [];
+            $total = $base;
+
+            // Ambil tunjangan khusus karyawan
+            foreach ($emp->salaryComponents as $comp) {
+                $amount = $comp->pivot->amount ?? 0;
+                $components[] = [
+                    'name' => $comp->name,
+                    'amount' => $amount
+                ];
+                $total += $amount;
+            }
+
+            EmployeeSalaryHistory::create([
+                'employee_id' => $emp->id,
+                'period' => $period,
+                'base_salary' => $base,
+                'components' => json_encode($components),
+                'total_salary' => $total,
+                'status' => 'draft'
+            ]);
         }
 
-        $payroll->update(['status' => 'published']);
-
-        return back()->with('success', 'Payroll berhasil dipublish!');
+        return redirect()->back()->with('success', '✅ Payroll periode ' . $period . ' berhasil digenerate.');
     }
 
-    public function pay(Request $request, EmployeeSalaryHistory $payroll)
+    
+    public function approveMass(Request $request)
     {
-        // Hanya boleh bayar jika sudah published
-        if ($payroll->status !== 'published') {
-            return back()->with('error', 'Hanya payroll yang sudah dipublish yang bisa dibayar.');
+        $ids = $request->input('ids', []);
+        EmployeeSalaryHistory::whereIn('id', $ids)->update(['status' => 'published']);
+        return back()->with('success', '✅ ' . count($ids) . ' slip gaji berhasil dipublish.');
+    }
+
+    public function publish($id)
+    {
+        $history = EmployeeSalaryHistory::findOrFail($id);
+        if ($history->status !== 'draft') {
+            return back()->with('error', 'Hanya status draft yang bisa dipublish.');
         }
+        $history->update(['status' => 'published']);
+        return back()->with('success', '✅ Slip gaji telah dipublish.');
+    }
 
-        $payroll->update(['status' => 'paid']);
-
-        return back()->with('success', 'Gaji telah dibayar!');
+    public function pay($id)
+    {
+        $history = EmployeeSalaryHistory::findOrFail($id);
+        if ($history->status !== 'published') {
+            return back()->with('error', 'Hanya status published yang bisa dibayar.');
+        }
+        $history->update(['status' => 'paid']);
+        return back()->with('success', '✅ Gaji telah dibayarkan.');
     }
 }

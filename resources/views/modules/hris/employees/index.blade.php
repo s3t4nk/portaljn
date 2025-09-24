@@ -83,7 +83,7 @@
     </div>
 @stop
 
-@section('css')
+@push('css')
     <style>
         .btn-circle {
             width: 32px;
@@ -95,9 +95,9 @@
             border-radius: 50%;
         }
     </style>
-@stop
-
-@section('js')
+@endpush
+    
+@push('js')
     <script>
         $(function () {
             $('#table-employees').DataTable({
@@ -118,4 +118,4 @@
             $('.alert').delay(3000).fadeOut();
         });
     </script>
-@stop
+@endpush

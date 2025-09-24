@@ -2,6 +2,7 @@
 
 namespace App\Modules\HRIS\Controllers;
 
+
 use App\Http\Controllers\Controller;
 use App\Modules\HRIS\Models\Employee;
 use App\Modules\HRIS\Models\Branch;
@@ -18,83 +19,15 @@ class EmployeeController extends Controller
 {
     public function index()
     {
-        $employees = Employee::with(['branch', 'department', 'position'])->get();
+        $employees = Employee::with(['branch', 'department', 'position'])->latest()->get();
         return view('modules.hris.employees.index', compact('employees'));
     }
 
     public function create()
     {
-        $branches = Branch::orderBy('name')->get();
-        $departments = Department::orderBy('name')->get();
-        $units = Unit::orderBy('name')->get();
-        $positions = Position::orderBy('name')->get();
-        return view('modules.hris.employees.create', compact('branches', 'departments', 'units', 'positions'));
-    }
-
-    public function store_lama(Request $request)
-    {
-        // Validasi disesuaikan nanti di multi-step
-        $data = $request->all();
-        Employee::create($data);
-
-        return redirect()->route('hris.employees.index')
-            ->with('success', 'Data karyawan berhasil disimpan.');
-    }
-
-    public function store1(Request $request)
-    {
-        $request->validate([
-            'employee_number' => 'required|unique:employees',
-            'name' => 'required',
-            'email' => 'nullable|email|unique:users,email',
-            'nik'   => 'nullable|unique:employee',
-            'id_card_number' => 'required|unique:employees',
-            'position_id' => 'required|exists:positions,id'
-        ]);
-
-        // Auto-generate email jika belum ada
-        $email = $request->email ?? "{$request->employee_number}@jembatannusantara.co.id";
-
-        // Cek apakah email sudah ada di users
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $email,
-                'password' => Hash::make('password123'), // Bisa diubah saat first login
-            ]);
-        }
-
-        // Dapatkan position
-        $position = Position::find($request->position_id);
-
-        // Tentukan role berdasarkan logika bisnis
-        $role = 'staff_darat'; // default
-
-        if ($position->employee_type === 'laut') {
-            $role = 'crew_laut';
-        }
-
-        if ($position->is_management) {
-            $role = 'manager';
-        }
-
-        // Cek apakah departemen HR → assign admin_hr
-        if ($position->name === 'Admin HR' || str_contains(strtolower($position->name), 'hr')) {
-            $role = 'admin_hr';
-        }
-
-        // Pastikan role ada, lalu assign
-        $user->assignRole($role);
-
-        // Simpan ke employees
-        $employee = Employee::create(array_merge($request->all(), [
-            'user_id' => $user->id,
-            'email' => $email // simpan juga di employee untuk konsistensi
-        ]));
-
-        return redirect()->route('hris.employees.index')
-            ->with('success', "Karyawan {$employee->name} berhasil ditambahkan & akun dibuat.");
+        $branches = \App\Modules\HRIS\Models\Branch::all();
+        $positions = \App\Modules\HRIS\Models\Position::all();
+        return view('modules.hris.employees.create', compact('branches', 'positions'));
     }
 
     public function store(Request $request)
@@ -104,12 +37,12 @@ class EmployeeController extends Controller
             // Data Pribadi
             'employee_number' => 'required|unique:employees,employee_number',
             'name' => 'required|string|max:255',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // opsional, max 2MB
             'gender' => 'required|in:L,P',
             'birth_place' => 'required|string|max:255',
             'birth_date' => 'required|date',
             'religion' => 'required|string|max:50',
             'blood_type' => 'nullable|string|max:3',
-
             'marital_status' => 'required|in:belum_menikah,menikah,cerai_hidup,cerai_mati',
             'address' => 'required|string',
             'postal_code' => 'nullable|string|max:10',
@@ -137,6 +70,8 @@ class EmployeeController extends Controller
             'npwp_number' => 'nullable|string',
             'bpjs_ketenagakerjaan' => 'nullable|string',
             'bpjs_kesehatan' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|regex:/^[0-9]+$/|max:20',
 
             // Kontak Darurat
             'emergency_contact_name' => 'required|string|max:255',
@@ -150,79 +85,101 @@ class EmployeeController extends Controller
         $email = $request->email ?? "{$request->employee_number}@jembatannusantara.co.id";
 
         // Cek apakah user sudah ada
-        $user = User::where('email', $email)->first();
+        $user = \App\Models\User::where('email', $email)->first();
         if (!$user) {
-            $user = User::create([
+            $user = \App\Models\User::create([
                 'name' => $request->name,
                 'email' => $email,
-                'password' => Hash::make('password123'),
+                'password' => bcrypt('password123'),
             ]);
         }
 
-        // Pastikan email ikut disimpan di employees
-        $validated['email'] = $email;
+        // Handle upload foto
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('employee-photos', 'public');
+        }
 
         // Simpan ke employees
         Employee::create(array_merge($validated, [
-            'user_id' => $user->id
+            'user_id' => $user->id,
+            'photo' => $photoPath,
+            'email' => $email,
         ]));
 
         return redirect()->route('hris.employees.index')
             ->with('success', "Karyawan {$request->name} berhasil ditambahkan.");
     }
 
-    // public function show(Employee $employee)
-    // {
-    //     $employee->load(['branch', 'department', 'unit', 'position']);
-    //     return view('modules.hris.employees.show', compact('employee'));
-    // }
-
     public function show(Employee $employee)
     {
-        $employee->load(['branch', 'department', 'unit', 'position.salaryGrade']);
+        // Ambil data sertifikat digital
+        $certificates = $employee->certificates;
 
-        // Hitung gaji pokok + komponen
+        // Ambil histori gaji terakhir
+        $lastSalary = $employee->salaryHistories()->latest('period')->first();
+
+        // Hitung struktur gaji (gaji pokok + komponen)
         $base = $employee->position?->salaryGrade?->base_salary ?? 0;
-        $components = collect();
+        $components = [];
+        $total = $base;
 
-        foreach (SalaryComponent::where('is_active', true)->get() as $comp) {
-            if ($this->shouldApplyComponent($comp, $employee)) {
-                $amount = $comp->type === 'percentage'
-                    ? ($base * $comp->amount / 100)
-                    : $comp->amount;
-
-                $components->push([
-                    'name' => $comp->name,
-                    'type' => $comp->type,
-                    'value' => $amount
-                ]);
-            }
+        // Ambil komponen gaji khusus karyawan ini
+        foreach ($employee->salaryComponents as $comp) {
+            $amount = $comp->pivot->amount ?? 0;
+            $components[] = [
+                'name' => $comp->name,
+                'value' => $amount
+            ];
+            $total += $amount;
         }
 
-        $total = $base + $components->sum('value');
-
-        // Filter & paginate histori gaji
-        $period = request('period');
-        $query = $employee->salaryHistories();
-
-        if ($period) {
-            $query->where('period', $period);
-        }
-
-        $salaryHistories = $query->orderBy('period', 'desc')->paginate(5);
-
-        // Simpan tab aktif
-        $activeTab = request('tab') ?? 'personal';
+        // Default active tab
+        $activeTab = request('tab', 'personal');
 
         return view('modules.hris.employees.show', compact(
             'employee',
-            'base',
-            'components',
-            'total',
-            'salaryHistories',
-            'activeTab'
+            'certificates',      // untuk tab Dokumen
+            'lastSalary',        // opsional
+            'base',              // gaji pokok
+            'components',        // tunjangan
+            'total',             // total estimasi
+            'activeTab'          // tab aktif
         ));
     }
+
+    public function edit(Employee $employee)
+    {
+        $branches = \App\Modules\HRIS\Models\Branch::all();
+        $positions = \App\Modules\HRIS\Models\Position::all();
+        return view('modules.hris.employees.edit', compact('employee', 'branches', 'positions'));
+    }
+
+    public function update(Request $request, Employee $employee)
+    {
+        // Validasi (sesuaikan kebutuhan)
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'gender' => 'required|in:L,P',
+            'birth_date' => 'required|date',
+            'phone' => 'required|string|max:20',
+            'branch_id' => 'required|exists:branches,id',
+            'position_id' => 'required|exists:positions,id',
+        ]);
+
+        $employee->update($validated);
+
+        return redirect()->route('hris.employees.show', $employee)
+            ->with('success', 'Data karyawan berhasil diperbarui.');
+    }
+
+    public function destroy(Employee $employee)
+    {
+        $employee->delete();
+        return redirect()->route('hris.employees.index')
+            ->with('success', 'Karyawan berhasil dihapus.');
+    }
+
     private function shouldApplyComponent($component, $employee)
     {
         if ($component->applicable_to === 'grade') {
@@ -246,26 +203,4 @@ class EmployeeController extends Controller
         return false;
     }
 
-    public function edit(Employee $employee)
-    {
-        $branches = Branch::orderBy('name')->get();
-        $departments = Department::orderBy('name')->get();
-        $units = Unit::orderBy('name')->get();
-        $positions = Position::orderBy('name')->get();
-        return view('modules.hris.employees.edit', compact('employee', 'branches', 'departments', 'units', 'positions'));
-    }
-
-    public function update(Request $request, Employee $employee)
-    {
-        $employee->update($request->all());
-        return redirect()->route('hris.employees.index')
-            ->with('success', 'Data karyawan berhasil diperbarui.');
-    }
-
-    public function destroy(Employee $employee)
-    {
-        $employee->delete();
-        return redirect()->route('hris.employees.index')
-            ->with('success', 'Karyawan berhasil dihapus.');
-    }
 }

@@ -33,9 +33,9 @@ class DepartmentController extends Controller
     public function update(Request $request, Department $department)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
             'branch_id' => 'required|exists:branches,id',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
         ]);
 
         $department->update($request->all());

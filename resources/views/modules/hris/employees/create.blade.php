@@ -28,7 +28,7 @@
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
             </div>
         @endif
-        <form action="{{ route('hris.employees.store') }}" method="POST" id="multi-step-form">
+        <form action="{{ route('hris.employees.store') }}" method="POST" id="multi-step-form" enctype="multipart/form-data">
             @csrf
 
             <!-- Progress -->
@@ -69,6 +69,24 @@
                             <div class="form-group">
                                 <label>Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" name="name" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Foto Profil (Opsional)</label>
+                                <div class="custom-file">
+                                    <input type="file" name="photo" class="custom-file-input" id="photoInput"
+                                        accept="image/*">
+                                    <label class="custom-file-label" for="photoInput">Pilih file gambar...</label>
+                                </div>
+                                <small class="form-text text-muted">Format: JPG, PNG. Maks: 2MB.</small>
+                                <!-- Preview Container -->
+                                <div class="mt-2">
+                                    <img id="photoPreview" src="" alt="Preview Foto" class="img-thumbnail d-none"
+                                        style="max-height: 150px;">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -141,7 +159,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Kode Pos</label>
-                                <input type="text" name="postal_pos" class="form-control" maxlength="10"
+                                <input type="text" name="postal_code" class="form-control" maxlength="10"
                                     placeholder="misal: 69116">
                             </div>
                         </div>
@@ -308,6 +326,32 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 👇👇👇 PENAMBAHAN BARU: BANK & REKENING 👇👇👇 -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-university"></i> Nama Bank</label>
+                                <select name="bank_name" class="form-control">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="BCA">BCA</option>
+                                    <option value="Mandiri">Mandiri</option>
+                                    <option value="BNI">BNI</option>
+                                    <option value="BRI">BRI</option>
+                                    <option value="CIMB Niaga">CIMB Niaga</option>
+                                    <option value="Danamon">Danamon</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-credit-card"></i> Nomor Rekening</label>
+                                <input type="number" name="bank_account_number" class="form-control"
+                                    placeholder="Contoh: 1234567890">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 👆👆👆 PENAMBAHAN SELESAI 👆👆👆 -->
                     <div class="form-group">
                         <label>Nama Kontak Darurat <span class="text-danger">*</span></label>
                         <input type="text" name="emergency_contact_name" class="form-control" required>
@@ -356,12 +400,21 @@
             height: calc(2.25em + 0.75rem + 2px);
             padding: 0.375rem 0.75rem;
         }
+
+        .form-group.error input,
+        .form-group.error select,
+        .form-group.error textarea {
+            border-color: #dc3545 !important;
+            background-color: #f8d7da !important;
+        }
     </style>
 @stop
 
-@section('js')
+@push('js')
     <script>
-        $(function() {
+        $(document).ready(function() {
+            console.log('✅ Multi-step script loaded and ready.');
+
             let currentStep = 1;
             const totalSteps = 3;
 
@@ -372,13 +425,12 @@
                 allowClear: true
             });
 
+            // Fungsi tampilkan step
             function showStep(step) {
                 $('.step-content').addClass('d-none');
                 $(`.step-content[data-step="${step}"]`).removeClass('d-none');
-
                 $('.step-btn').removeClass('btn-primary').addClass('btn-secondary');
                 $(`.step-btn[data-step="${step}"]`).removeClass('btn-secondary').addClass('btn-primary');
-
                 $('#prev-btn').prop('disabled', step === 1);
                 if (step === totalSteps) {
                     $('#next-btn').addClass('d-none');
@@ -389,27 +441,180 @@
                 }
             }
 
-            // Show initial step
+            // Tampilkan step awal
             showStep(currentStep);
 
-            // Next button
-            $('#next-btn').click(function() {
+            // Validasi field wajib per step
+            function validateStep(step) {
+                let isValid = true;
+                let errorMessage = '';
+
+                // Reset error class
+                $('.form-group').removeClass('error');
+
+                if (step === 1) {
+                    const requiredFields = [{
+                            name: 'employee_number',
+                            label: 'NIK Karyawan'
+                        },
+                        {
+                            name: 'name',
+                            label: 'Nama Lengkap'
+                        },
+                        {
+                            name: 'gender',
+                            label: 'Jenis Kelamin'
+                        },
+                        {
+                            name: 'birth_place',
+                            label: 'Tempat Lahir'
+                        },
+                        {
+                            name: 'birth_date',
+                            label: 'Tanggal Lahir'
+                        },
+                        {
+                            name: 'religion',
+                            label: 'Agama'
+                        },
+                        {
+                            name: 'marital_status',
+                            label: 'Status Perkawinan'
+                        },
+                        {
+                            name: 'address',
+                            label: 'Alamat Lengkap'
+                        },
+                        {
+                            name: 'phone',
+                            label: 'No. Telepon'
+                        }
+                    ];
+
+                    requiredFields.forEach(field => {
+                        const input = $(`[name="${field.name}"]`);
+                        const value = input.val();
+                        if (!value || value.trim() === '') {
+                            isValid = false;
+                            errorMessage += `• ${field.label} wajib diisi\n`;
+                            input.closest('.form-group').addClass('error');
+                        }
+                    });
+                }
+
+                if (step === 2) {
+                    const requiredFields = [{
+                            name: 'branch_id',
+                            label: 'Cabang'
+                        },
+                        {
+                            name: 'department_id',
+                            label: 'Departemen'
+                        },
+                        {
+                            name: 'position_id',
+                            label: 'Jabatan'
+                        },
+                        {
+                            name: 'employment_status',
+                            label: 'Status Kepegawaian'
+                        },
+                        {
+                            name: 'joining_date',
+                            label: 'TMT Kerja'
+                        }
+                    ];
+
+                    requiredFields.forEach(field => {
+                        const input = $(`[name="${field.name}"]`);
+                        const value = input.val();
+                        if (!value || value.trim() === '') {
+                            isValid = false;
+                            errorMessage += `• ${field.label} wajib diisi\n`;
+                            input.closest('.form-group').addClass('error');
+                        }
+                    });
+
+                    // Validasi kontrak jika dipilih
+                    if ($('select[name="employment_status"]').val() === 'kontrak') {
+                        const start = $('input[name="contract_start"]').val();
+                        const end = $('input[name="contract_end"]').val();
+                        if (!start) {
+                            isValid = false;
+                            errorMessage += '• Tanggal Mulai Kontrak wajib diisi\n';
+                            $('input[name="contract_start"]').closest('.form-group').addClass('error');
+                        }
+                        if (!end) {
+                            isValid = false;
+                            errorMessage += '• Tanggal Akhir Kontrak wajib diisi\n';
+                            $('input[name="contract_end"]').closest('.form-group').addClass('error');
+                        }
+                    }
+                }
+
+                if (step === 3) {
+                    const requiredFields = [{
+                            name: 'id_card_number',
+                            label: 'NIK KTP'
+                        },
+                        {
+                            name: 'emergency_contact_name',
+                            label: 'Nama Kontak Darurat'
+                        },
+                        {
+                            name: 'emergency_contact_relation',
+                            label: 'Hubungan Keluarga'
+                        },
+                        {
+                            name: 'emergency_contact_phone',
+                            label: 'No. Telepon Darurat'
+                        }
+                    ];
+
+                    requiredFields.forEach(field => {
+                        const input = $(`[name="${field.name}"]`);
+                        const value = input.val();
+                        if (!value || value.trim() === '') {
+                            isValid = false;
+                            errorMessage += `• ${field.label} wajib diisi\n`;
+                            input.closest('.form-group').addClass('error');
+                        }
+                    });
+                }
+
+                if (!isValid) {
+                    alert('⚠️ Mohon lengkapi data berikut:\n\n' + errorMessage);
+                }
+
+                return isValid;
+            }
+
+            // Event: Tombol Lanjut
+            $(document).on('click', '#next-btn', function() {
+                console.log('➡️ Next button clicked, current step:', currentStep);
+
+                // Validasi step saat ini
+                if (!validateStep(currentStep)) {
+                    return false;
+                }
+
                 if (currentStep < totalSteps) {
                     currentStep++;
                     showStep(currentStep);
                 }
             });
 
-            // Prev button
-            $('#prev-btn').click(function() {
+            // Event: Tombol Kembali
+            $(document).on('click', '#prev-btn', function() {
+                console.log('⬅️ Prev button clicked, current step:', currentStep);
                 if (currentStep > 1) {
                     currentStep--;
                     showStep(currentStep);
                 }
             });
 
-            // Step buttons
-            $('.step-btn').click(function() {
+            // Event: Tombol Step (lingkaran)
+            $(document).on('click', '.step-btn', function() {
                 const step = parseInt($(this).data('step'));
                 if (step <= currentStep) {
                     currentStep = step;
@@ -417,33 +622,57 @@
                 }
             });
 
-            // Dynamic Department & Unit
-            $('select[name="branch_id"]').change(function() {
+            // Dynamic: Cabang → Departemen
+            $(document).on('change', 'select[name="branch_id"]', function() {
                 const branchId = $(this).val();
-                $.get(`/api/departments?branch_id=${branchId}`, function(data) {
+                if (!branchId) {
                     $('select[name="department_id"]').html('<option value="">-- Pilih --</option>');
-                    data.forEach(d => {
-                        $('select[name="department_id"]').append(
-                            `<option value="${d.id}">${d.name}</option>`);
+                    $('select[name="unit_id"]').html('<option value="">-- Pilih Dulu Divisi --</option>');
+                    return;
+                }
+                $.get(`/api/departments?branch_id=${branchId}`)
+                    .done(function(data) {
+                        console.log('✅ Departemen diterima:', data);
+                        $('select[name="department_id"]').html('<option value="">-- Pilih --</option>');
+                        data.forEach(d => {
+                            $('select[name="department_id"]').append(
+                                `<option value="${d.id}">${d.name}</option>`
+                            );
+                        });
+                        $('select[name="unit_id"]').html(
+                            '<option value="">-- Pilih Dulu Divisi --</option>');
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error('❌ Gagal memuat departemen:', textStatus, errorThrown);
+                        alert('Gagal memuat data departemen. Cek konsol untuk detail error.');
                     });
-                    $('select[name="unit_id"]').html(
-                        '<option value="">-- Pilih Dulu Divisi --</option>');
-                });
             });
 
-            $('select[name="department_id"]').change(function() {
+            // Dynamic: Departemen → Unit
+            $(document).on('change', 'select[name="department_id"]', function() {
                 const deptId = $(this).val();
-                $.get(`/api/units?department_id=${deptId}`, function(data) {
+                if (!deptId) {
                     $('select[name="unit_id"]').html('<option value="">-- Pilih --</option>');
-                    data.forEach(u => {
-                        $('select[name="unit_id"]').append(
-                            `<option value="${u.id}">${u.name}</option>`);
+                    return;
+                }
+                $.get(`/api/units?department_id=${deptId}`)
+                    .done(function(data) {
+                        console.log('✅ Unit diterima:', data);
+                        $('select[name="unit_id"]').html('<option value="">-- Pilih --</option>');
+                        data.forEach(u => {
+                            $('select[name="unit_id"]').append(
+                                `<option value="${u.id}">${u.name}</option>`
+                            );
+                        });
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error('❌ Gagal memuat unit:', textStatus, errorThrown);
+                        alert('Gagal memuat data unit. Cek konsol untuk detail error.');
                     });
-                });
             });
 
-            // Show/hide kontrak fields
-            $('select[name="employment_status"]').change(function() {
+            // Show/hide field kontrak
+            $(document).on('change', 'select[name="employment_status"]', function() {
                 if ($(this).val() === 'kontrak') {
                     $('.contract-fields').removeClass('d-none');
                 } else {
@@ -451,35 +680,58 @@
                 }
             });
 
-            // Auto-fill email from NIK
-            $('input[name="employee_number"]').blur(function() {
+            // Auto-fill email dari NIK
+            $(document).on('blur', 'input[name="employee_number"]', function() {
                 const nik = $(this).val();
-                if (nik && !$('input[name="email"]').val()) {
+                if (nik && !$('input[name="email"]').length) {
+                    // Jika field email tidak ada, update preview saja
+                    const email = nik + '@jembatannusantara.co.id';
+                    $('#auto-email-preview').text(email);
+                } else if (nik && !$('input[name="email"]').val()) {
                     const email = nik + '@jembatannusantara.co.id';
                     $('input[name="email"]').val(email);
                 }
             });
-        });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const nikInput = document.querySelector('input[name="employee_number"]');
-            const emailPreview = document.getElementById('auto-email-preview');
-
-            // Fungsi update preview
-            function updateEmailPreview() {
-                const nik = nikInput.value.trim();
-                if (nik) {
-                    emailPreview.textContent = `${nik}@jembatannusantara.co.id`;
+            // Preview foto saat dipilih
+            $('#photoInput').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#photoPreview')
+                            .attr('src', e.target.result)
+                            .removeClass('d-none');
+                    }
+                    reader.readAsDataURL(file);
+                    // Update label
+                    $(this).next('.custom-file-label').text(file.name);
                 } else {
-                    emailPreview.textContent = '______@jembatannusantara.co.id';
+                    $('#photoPreview').addClass('d-none');
+                    $(this).next('.custom-file-label').text('Pilih file gambar...');
+                }
+            });
+
+            // Email Preview (jQuery version)
+            const nikInput = $('input[name="employee_number"]');
+            const emailPreview = $('#auto-email-preview');
+
+            function updateEmailPreview() {
+                const nik = nikInput.val().trim();
+                if (nik) {
+                    emailPreview.text(`${nik}@jembatannusantara.co.id`);
+                } else {
+                    emailPreview.text('______@jembatannusantara.co.id');
                 }
             }
 
-            // Jalankan saat halaman load (untuk data lama setelah validation fail)
-            updateEmailPreview();
+            updateEmailPreview(); // Saat halaman load
+            nikInput.on('input', updateEmailPreview); // Saat user ketik
 
-            // Update saat ketik
-            nikInput.addEventListener('input', updateEmailPreview);
+            // Reset error saat user isi field
+            $(document).on('input change', 'input, select, textarea', function() {
+                $(this).closest('.form-group').removeClass('error');
+            });
         });
     </script>
-@stop
+@endpush

@@ -317,7 +317,7 @@
     </div>
 @stop
 
-@section('js')
+@push('js')
     <script>
         // Show/hide section based on applicable_to
         $('#applicable_to').change(function() {
@@ -384,4 +384,5 @@
         // Auto-close alert
         $('.alert').delay(3000).fadeOut();
     </script>
-@stop
+@endpush
+    

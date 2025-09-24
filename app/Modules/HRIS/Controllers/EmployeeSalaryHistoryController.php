@@ -14,13 +14,20 @@ use Illuminate\Http\Request;
 
 class EmployeeSalaryHistoryController extends Controller
 {
-    public function downloadSlip($id)
+    public function downloadSlip($id, Request $request)
     {
         $employee = Employee::with(['position', 'unit'])->findOrFail($id);
-        $history = $employee->getLastSalaryAttribute();
+        $period = $request->input('period');
+
+        // Jika tidak ada period, ambil yang terbaru
+        if (!$period) {
+            $history = $employee->getLastSalaryAttribute();
+        } else {
+            $history = $employee->salaryHistories()->where('period', $period)->first();
+        }
 
         if (!$history) {
-            return back()->with('error', 'Data gaji belum tersedia.');
+            return back()->with('error', 'Data gaji untuk periode ini tidak ditemukan.');
         }
 
         // Logo → base64
@@ -39,17 +46,13 @@ class EmployeeSalaryHistoryController extends Controller
             'period' => $history->period
         ];
 
-        // ✅ Gunakan SVG (sudah di-import)
+        // Generate QR Code sebagai SVG string
         $renderer = new ImageRenderer(
             new RendererStyle(100),
-            new SvgImageBackEnd() // ✅ Sudah ada use statement
+            new SvgImageBackEnd()
         );
         $writer = new Writer($renderer);
-
-        // Generate QR Code sebagai SVG string
         $qrCodeSvg = $writer->writeString(json_encode($gmData));
-
-        // Konversi ke base64 agar bisa ditampilkan di PDF
         $qrCodeBase64 = 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg);
 
         $data = [
