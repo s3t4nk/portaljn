@@ -21,7 +21,7 @@ use Illuminate\Http\Request;
 
 //use Illuminate\Support\Facades\Log;
 
-Log::info('✅ use statement berhasil');
+// Log::info('✅ use statement berhasil');
 
 // ========================
 // 🔥 API UNTUK DROPDOWN — HARUS DI LUAR GRUP AUTH
@@ -48,7 +48,7 @@ Route::get('/api/units', function (Request $request) {
 // Grup utama HRIS
 Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
 
-    Log::info('✅ Grup admin dimulai');
+    // Log::info('✅ Grup admin dimulai');
     // Dashboard & Resource lainnya
     Route::get('/dashboard', [HrisController::class, 'dashboard'])->name('dashboard');
 
@@ -142,5 +142,7 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
+
+    Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import');
     
 });

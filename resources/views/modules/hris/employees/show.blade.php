@@ -216,10 +216,12 @@
                                                         <th>Bulan</th>
                                                         <th>Total Gaji</th>
                                                         <th>Status</th>
+                                                        <th>Aksi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach ($employee->salaryHistories as $hist)
+                                                    {{-- @foreach ($employee->salaryHistories as $hist) --}}
+                                                    @foreach ($paidSalaries as $hist)
                                                         <tr>
                                                             <td>{{ \Carbon\Carbon::parse($hist->period . '-01')->locale('id')->format('F Y') }}
                                                             </td>

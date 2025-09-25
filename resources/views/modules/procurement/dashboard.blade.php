@@ -36,7 +36,7 @@
                     <li class="nav-item">
                         <a href="/hris" class="nav-link active">
                             <i class="nav-icon fas fa-th"></i>
-                            <p>Dashboard HRIS</p>
+                            <p>Dashboard Pengadaan Barang & Jasa</p>
                         </a>
                     </li>
                     <li class="nav-item">
