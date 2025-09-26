@@ -60,9 +60,10 @@ class Employee extends Model
 
     public function salaryComponents()
     {
-        return $this->belongsToMany(SalaryComponent::class, 'employee_salary_component')
+        return $this->belongsToMany(SalaryComponent::class, 'employee_salary_component') // pakai plural
             ->withPivot('amount', 'notes');
     }
+
 
     public function salaryHistories()
     {

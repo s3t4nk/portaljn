@@ -17,11 +17,12 @@ use App\Modules\HRIS\Controllers\EmployeeController;
 use App\Modules\HRIS\Controllers\PayrollController;
 use App\Modules\HRIS\Controllers\EmployeeSalaryHistoryController;
 use App\Modules\HRIS\Controllers\CertificateController;
+use App\Modules\HRIS\Controllers\EmployeeSalaryComponentController;
 use Illuminate\Http\Request;
 
 //use Illuminate\Support\Facades\Log;
 
-Log::info('✅ use statement berhasil');
+// Log::info('✅ use statement berhasil');
 
 // ========================
 // 🔥 API UNTUK DROPDOWN — HARUS DI LUAR GRUP AUTH
@@ -48,7 +49,7 @@ Route::get('/api/units', function (Request $request) {
 // Grup utama HRIS
 Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
 
-    Log::info('✅ Grup admin dimulai');
+    // Log::info('✅ Grup admin dimulai');
     // Dashboard & Resource lainnya
     Route::get('/dashboard', [HrisController::class, 'dashboard'])->name('dashboard');
 
@@ -75,7 +76,7 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
 
     // === DIGITAL DOKUMEN: SERTIFIKAT KARYAWAN ===
-    
+
     Route::get('/certificates/{nik}', [CertificateController::class, 'index'])->name('certificates.index');
     Route::get('/certificates/{nik}/create', [CertificateController::class, 'create'])->name('certificates.create');
     Route::post('/certificates/{nik}', [CertificateController::class, 'store'])->name('certificates.store');
@@ -142,5 +143,19 @@ Route::middleware(['auth'])->prefix('hris')->as('hris.')->group(function () {
     });
     Route::get('employees/{id}/slip', [EmployeeSalaryHistoryController::class, 'downloadSlip'])
         ->name('employees.slip');
-    
+
+    Route::post('/employees/import', [EmployeeController::class, 'import'])->name('employees.import');
+
+    Route::prefix('employee-salary-component')->as('employee-salary-component.')->group(function () {
+    // list semua pegawai
+    Route::get('/', [EmployeeSalaryComponentController::class, 'listEmployees'])->name('list');
+
+    // manage per pegawai (harus pakai {employeeId})
+    Route::get('/{employeeId}', [EmployeeSalaryComponentController::class, 'index'])->name('index');
+    Route::post('/{employeeId}', [EmployeeSalaryComponentController::class, 'store'])->name('store');
+    Route::put('/{employeeId}/{id}', [EmployeeSalaryComponentController::class, 'update'])->name('update');
+    Route::delete('/{employeeId}/{id}', [EmployeeSalaryComponentController::class, 'destroy'])->name('destroy');
+});
+
+
 });

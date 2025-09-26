@@ -14,6 +14,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Modules\HRIS\Models\SalaryComponent;
 use App\Modules\HRIS\Models\EmployeeSalaryHistory;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\EmployeesImport;
+use Illuminate\Support\Facades\Log;
 
 class EmployeeController extends Controller
 {
@@ -117,7 +121,15 @@ class EmployeeController extends Controller
         $certificates = $employee->certificates;
 
         // Ambil histori gaji terakhir
-        $lastSalary = $employee->salaryHistories()->latest('period')->first();
+        //$lastSalary = $employee->salaryHistories()->latest('period')->first();
+        // Ambil semua histori gaji yang sudah dibayar
+        $paidSalaries = $employee->salaryHistories()
+            ->where('status', 'paid')
+            ->orderBy('period', 'desc')
+            ->get();
+
+        // Jika ingin tetap tampilkan yang belum dibayar, gunakan:
+        // $allSalaries = $employee->salaryHistories()->orderBy('period', 'desc')->get();
 
         // Hitung struktur gaji (gaji pokok + komponen)
         $base = $employee->position?->salaryGrade?->base_salary ?? 0;
@@ -140,7 +152,7 @@ class EmployeeController extends Controller
         return view('modules.hris.employees.show', compact(
             'employee',
             'certificates',      // untuk tab Dokumen
-            'lastSalary',        // opsional
+            'paidSalaries',        // opsional
             'base',              // gaji pokok
             'components',        // tunjangan
             'total',             // total estimasi
@@ -203,4 +215,27 @@ class EmployeeController extends Controller
         return false;
     }
 
+    public function import(Request $request)
+    {
+        Log::info('🔍 Mulai proses import...');
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240',
+        ]);
+
+        Log::info('✅ File valid, mulai import...');
+
+        try {
+            $import = new EmployeesImport();
+            Excel::import($import, $request->file('file'));
+
+            Log::info('✅ Import selesai. Baris diproses: ' . ($import->rowsProcessed ?? 'tidak diketahui'));
+
+            return redirect()->back()->with('success', '✅ Data karyawan berhasil diimpor!');
+        } catch (\Exception $e) {
+            Log::error('❌ Import gagal: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()->with('error', '❌ Gagal import: ' . $e->getMessage());
+        }
+    }
 }
